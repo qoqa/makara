@@ -103,11 +103,7 @@ module Makara
 
     # we want to forward all private methods, since we could have kicked out from a private scenario
     def method_missing(m, *args, &block)
-      if _makara_connection.respond_to?(m)
-        _makara_connection.public_send(m, *args, &block)
-      else # probably private method
-        _makara_connection.__send__(m, *args, &block)
-      end
+      _makara_connection.send(m, *args, &block)
     end
 
 
@@ -154,10 +150,10 @@ module Makara
       # The new definition should allow for the proxy to intercept the invocation if required.
       @proxy.class.hijack_methods.each do |meth|
         extension << %Q{
-          def #{meth}(*args, &block)
+          def #{meth}(#{args})
             _makara_hijack do |proxy|
               if proxy
-                proxy.#{meth}(*args, &block)
+                proxy.public_send(#{meth.inspect}, ...)
               else
                 super
               end
@@ -171,10 +167,10 @@ module Makara
       # related to ActiveRecord connection pool management)
       @proxy.class.control_methods.each do |meth|
         extension << %Q{
-          def #{meth}(*args, &block)
+          def #{meth}(#{args})
             proxy = _makara
             if proxy
-              proxy.control.#{meth}(*args=args, block)
+              proxy.control.public_send(#{meth.inspect}, ...)
             else
               super # Only if we are not wrapped any longer
             end

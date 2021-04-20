@@ -122,10 +122,8 @@ module Makara
       end
 
       any_connection do |con|
-        if con.respond_to?(m)
-          con.public_send(m, *args, &block)
-        elsif con.respond_to?(m, true)
-          con.__send__(m, *args, &block)
+        if con.respond_to?(m, true)
+          con.send(m, *args, &block)
         else
           super(m, *args, &block)
         end
